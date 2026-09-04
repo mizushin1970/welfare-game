@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>きょうも、ここで。｜採用ゲーム試作 v2</title>
+<style>
+:root{
+  --bg:#f5f1ea; --paper:#fffdf8; --ink:#3d3935; --muted:#766d66; --line:#ded4c8;
+  --blue:#dff1fb; --green:#e5f2df; --pink:#f7e1e8; --orange:#f8e5d7; --accent:#4b8fb7;
+  --danger:#f8dedc; --warm:#eef6e8; --shadow:0 4px 18px rgba(60,50,40,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif}
+button{font:inherit}
+.app{max-width:900px;margin:auto;min-height:100vh;background:var(--paper)}
+header{padding:14px 16px 10px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.logo{font-weight:900;font-size:26px;color:#3f83ad;letter-spacing:.02em}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.topbar{display:grid;grid-template-columns:100px 1fr;gap:10px;padding:10px 12px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.daybox{padding:12px;text-align:center}.daybox b{font-size:20px}.daybox span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.status{padding:10px 12px}
+.statusrow{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.time{font-weight:900;font-size:24px}.theme{font-size:13px;font-weight:700}
+.bar{height:7px;border-radius:10px;background:#eee7dd;overflow:hidden;margin-top:8px}.bar>div{height:100%;background:var(--accent);width:0%}
+.scene{margin:0 12px 10px;overflow:hidden}
+.scenehead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}
+.scenehead b{font-size:16px}.tiny{font-size:11px;color:var(--muted)}
+.room{position:relative;min-height:300px;background:linear-gradient(#e8f5fb 0 37%,#efe1cb 37% 100%);padding:16px}
+.window{height:62px;background:linear-gradient(#cce9f6,#ffffff);border-radius:10px;border:5px solid #c7a883;margin-bottom:12px}
+.board{position:absolute;right:16px;top:84px;width:125px;background:#fffdf3;border:5px solid #b99067;border-radius:4px;padding:8px;font-size:11px;line-height:1.45}
+.peopleRail{display:flex;gap:10px;overflow-x:auto;padding:78px 0 8px;scroll-snap-type:x mandatory}
+.personCard{flex:0 0 150px;scroll-snap-align:center;background:rgba(255,255,255,.9);border:2px solid transparent;border-radius:16px;padding:10px;text-align:center;box-shadow:0 3px 14px rgba(60,50,40,.08);cursor:pointer}
+.personCard.selected{border-color:var(--accent)}
+.avatar{width:84px;height:84px;border-radius:50%;margin:auto;display:grid;place-items:center;font-size:46px;border:4px solid #fff;box-shadow:0 3px 12px #0002}
+.pname{font-weight:900;margin-top:6px}
+.pstate{font-size:12px;color:var(--muted);min-height:34px;margin-top:4px;line-height:1.4}
+.focus{margin:0 12px 10px;padding:14px}
+.focusTop{display:flex;gap:12px;align-items:center}.focus .avatar{width:72px;height:72px;font-size:40px;margin:0}
+.focusText{min-width:0}.focusName{font-weight:900;font-size:18px}.baseline{font-size:12px;color:var(--muted);margin-top:4px}
+.reaction{margin-top:12px;padding:12px;border-radius:12px;background:var(--warm);min-height:74px;line-height:1.55}
+.reaction strong{display:block;margin-bottom:4px}
+.actionsWrap{position:sticky;bottom:0;z-index:4;background:linear-gradient(transparent,#fff 16%,#fff);padding:18px 12px 12px}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.actions button{border:1px solid var(--line);border-radius:14px;background:#fff;padding:11px 6px;min-height:58px;font-weight:800;color:var(--ink);box-shadow:0 2px 8px #0000000a}
+.actions button:disabled{opacity:.42}.actions .ico{display:block;font-size:21px;margin-bottom:2px}
+.meta{margin:0 12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meta .panel{padding:10px 12px}.meta b{font-size:13px}.metaText{font-size:12px;line-height:1.5;margin-top:5px;color:#615953}
+.modalLayer{position:fixed;inset:0;background:#0007;z-index:20;display:none;place-items:center;padding:16px}
+.modal{background:#fff;border-radius:20px;max-width:560px;width:100%;max-height:86vh;overflow:auto;padding:20px;box-shadow:0 12px 50px #0005}
+.modal h2{margin:0 0 10px;font-size:23px}.modal p{line-height:1.65}
+.choiceList{display:grid;gap:9px;margin-top:14px}
+.choiceList button,.primary,.secondary{border:1px solid var(--line);border-radius:13px;padding:12px 14px;background:#fff;text-align:left;font-weight:750;cursor:pointer}
+.primary{background:#eaf5fb;border-color:#a6cee5}.secondary{background:#fff}
+.daySummary{display:grid;gap:9px;margin:14px 0}.summaryItem{padding:11px;border-radius:12px;background:#f7f4ef;line-height:1.5;font-size:13px}
+.end{padding:24px 14px 50px;text-align:center}.end h1{font-size:30px}.endCard{text-align:left;margin:20px auto;max-width:620px;padding:18px}
+.warm{background:var(--warm);border-left:5px solid #7fad69;padding:12px;border-radius:10px;line-height:1.6}
+.bad{background:var(--danger);border-left:5px solid #cc7770;padding:12px;border-radius:10px;line-height:1.6}
+.quote{font-size:20px;font-weight:850;line-height:1.55;margin:18px 0}
+@media(min-width:760px){
+  .topbar{grid-template-columns:140px 1fr}
+  .room{min-height:360px}
+  .peopleRail{overflow:visible;display:grid;grid-template-columns:repeat(4,1fr);padding-top:100px}
+  .personCard{min-width:0}
+  .actionsWrap{position:static;padding-top:4px}
+  .actions button{min-height:68px}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<header>
+  <div class="logo">きょうも、ここで。</div>
+  <div class="sub">～ひとりひとりの「はたらく」を支える～　5日間の新人職員体験</div>
+</header>
+
+<section id="intro">
+  <div style="padding:18px 14px 8px;text-align:center">
+    <div class="panel" style="padding:22px 18px;background:linear-gradient(180deg,#fff,#f8fbfd)">
+      <div style="font-size:13px;color:var(--muted);font-weight:800">就労支援スタッフ体験ゲーム</div>
+      <h1 style="font-size:34px;margin:6px 0 2px;color:#3f83ad">きょうも、ここで。</h1>
+      <div class="sub">～ひとりひとりの「はたらく」を支える～</div>
+      <div style="margin:22px auto 8px;max-width:560px;text-align:left;line-height:1.8;font-size:15px">
+        <p>今日からあなたは、就労支援施設の新人スタッフです。</p>
+        <p>福祉の仕事は初めて。ここでは4人の利用者さんが、それぞれのペースで働いています。</p>
+        <div class="warm"><b>あなたの仕事は、「正解を当てること」ではありません。</b><br>その人を知り、変化に気づき、必要なときに支えること。</div>
+        <p>まずは5日間、一緒に働いてみてください。</p>
+      </div>
+      <button id="introStart" class="primary" style="display:block;width:100%;max-width:420px;margin:18px auto 4px;text-align:center">勤務開始</button>
+    </div>
+  </div>
+</section>
+
+<div id="play" style="display:none">
+  <div class="topbar">
+    <div class="panel daybox"><b id="dayLabel">DAY 1</b><span id="weekday">月曜日</span></div>
+    <div class="panel status">
+      <div class="statusrow"><div><div class="time" id="clock">9:00</div><div class="theme" id="theme">まずは「いつもの姿」を知ろう</div></div><div class="tiny" id="turnLabel">1 / 3</div></div>
+      <div class="bar"><div id="dayProgress"></div></div>
+    </div>
+  </div>
+
+  <section class="panel scene">
+    <div class="scenehead"><b id="sceneTitle">作業スペース</b><span class="tiny">気になる人をタップ</span></div>
+    <div class="room">
+      <div class="window"></div>
+      <div class="board"><b>本日の作業</b><br>袋詰め<br>シール貼り<br>箱詰め<br>検品</div>
+      <div class="peopleRail" id="peopleRail"></div>
+    </div>
+  </section>
+
+  <section class="panel focus">
+    <div id="focusEmpty" class="tiny">まず人物をタップしてください。DAY1では「普段どんな人なのか」を知ることが、明日以降の気づきにつながります。</div>
+    <div id="focusContent" style="display:none">
+      <div class="focusTop"><div class="avatar" id="focusAvatar"></div><div class="focusText"><div class="focusName" id="focusName"></div><div class="baseline" id="focusBaseline"></div></div></div>
+      <div class="reaction" id="reaction"><strong>今の様子</strong><span id="reactionText"></span></div>
+    </div>
+  </section>
+
+  <div class="meta">
+    <div class="panel"><b>今日わかったこと</b><div class="metaText" id="learned">まだありません。</div></div>
+    <div class="panel"><b>施設が大切にしていること</b><div class="metaText" id="valueHint">まずは「正す」より「知る」こと。</div></div>
+  </div>
+
+  <div class="actionsWrap">
+    <div class="actions">
+      <button data-act="observe"><span class="ico">👁</span>見る</button>
+      <button data-act="talk"><span class="ico">💬</span>話す</button>
+      <button data-act="wait"><span class="ico">⏳</span>待つ</button>
+      <button data-act="consult"><span class="ico">👥</span>相談</button>
+    </div>
+  </div>
+</div>
+
+<div id="ending" style="display:none"></div>
+
+<div class="modalLayer" id="modalLayer"><div class="modal" id="modal"></div></div>
+</div>
+
+<script>
+const chars={
+ sato:{name:'佐藤さん',emoji:'🧑🏻‍💼',color:'#dce9df',base:'口数は少なめ。作業中は集中するタイプ。'},
+ tanaka:{name:'田中さん',emoji:'👨🏻',color:'#dce9fb',base:'明るい。新しい作業では確認が多い。'},
+ yamada:{name:'山田さん',emoji:'👩🏻',color:'#f4dfe9',base:'周囲によく気づく。検品が得意。'},
+ suzuki:{name:'鈴木さん',emoji:'🧑🏻',color:'#f4dfd7',base:'作業が速い。急な予定変更は苦手。'}
+};
+
+const dayThemes=[
+ 'まずは「いつもの姿」を知ろう',
+ '昨日との小さな違いに気づこう',
+ '行動の理由を考えよう',
+ '生活の場面でも尊厳を守ろう',
+ '人・家族・職員をつないで一日を終えよう'
+];
+
+let S={
+ day:1, turn:1, selected:null,
+ rel:{sato:0,tanaka:0,yamada:0,suzuki:0},
+ knows:{},
+ history:[],
+ score:{observe:0,respect:0,safe:0,team:0},
+ flags:{}
+};
+
+function visibleState(id){
+ const d=S.day;
+ if(d===1){
+   return {
+    sato:'黙々と部品を並べている。',
+    tanaka:'「これで合ってるかな」と工程表を見ている。',
+    yamada:'笑顔で検品。隣の人にも声をかけている。',
+    suzuki:'箱詰めをテンポよく進めている。'
+   }[id];
+ }
+ if(d===2){
+   return {
+    sato:'昨日より手が遅い。時々、目をこする。',
+    tanaka:'昨日より迷わず袋詰めしている。',
+    yamada:'普段どおり検品を進めている。',
+    suzuki:'時計を何度も見ている。'
+   }[id];
+ }
+ if(d===3){
+   return {
+    sato:'今日は普段の速度に戻っている。',
+    tanaka:'工程表を自分で確認している。',
+    yamada:'周囲を見ながら検品中。',
+    suzuki:'予定変更を聞いて表情が硬くなった。'
+   }[id];
+ }
+ if(d===4){
+   return {
+    sato:'落ち着いて作業している。',
+    tanaka:'箱詰めにも興味を示している。',
+    yamada:'昼食のペースが遅く、水分も少ない。',
+    suzuki:'午前は安定している。'
+   }[id];
+ }
+ return {
+   sato:'あなたを見ると小さく会釈した。',
+   tanaka:'袋詰めを一人で進めている。',
+   yamada:'今日は食事も普段どおり。',
+   suzuki:'急な予定変更を聞き、予定表を見ている。'
+ }[id];
+}
+
+function render(){
+ document.querySelector('#dayLabel').textContent='DAY '+S.day;
+ document.querySelector('#weekday').textContent=['','月曜日','火曜日','水曜日','木曜日','金曜日'][S.day];
+ document.querySelector('#theme').textContent=dayThemes[S.day-1];
+ document.querySelector('#turnLabel').textContent=S.turn+' / 3';
+ document.querySelector('#dayProgress').style.width=((S.turn-1)/3*100)+'%';
+ document.querySelector('#clock').textContent=['','9:00','11:20','14:40'][S.turn];
+ renderPeople();
+ renderLearned();
+ if(S.selected) select(S.selected,true);
+}
+
+function renderPeople(){
+ const rail=document.querySelector('#peopleRail'); rail.innerHTML='';
+ Object.entries(chars).forEach(([id,c])=>{
+   const b=document.createElement('button');
+   b.className='personCard'+(S.selected===id?' selected':'');
+   b.innerHTML=`<div class="avatar" style="background:${c.color}">${c.emoji}</div><div class="pname">${c.name}</div><div class="pstate">${visibleState(id)}</div>`;
+   b.onclick=()=>select(id,false);
+   rail.appendChild(b);
+ });
+}
+
+function select(id,keepReaction){
+ S.selected=id; renderPeople();
+ const c=chars[id];
+ document.querySelector('#focusEmpty').style.display='none';
+ document.querySelector('#focusContent').style.display='block';
+ document.querySelector('#focusAvatar').style.background=c.color;
+ document.querySelector('#focusAvatar').textContent=c.emoji;
+ document.querySelector('#focusName').textContent=c.name;
+ document.querySelector('#focusBaseline').textContent=S.knows[id]?('あなたが知っていること：'+S.knows[id]):c.base;
+ if(!keepReaction){
+   document.querySelector('#reactionText').textContent=visibleState(id);
+ }
+}
+
+function immediate(id,act){
+ let text='',cls='warm';
+ const d=S.day;
+
+ if(act==='observe'){
+   S.score.observe++;
+   text='少し距離をとって様子を見ると、'+visibleState(id);
+   if(d===1){
+     if(id==='sato'){S.knows.sato='作業中は静か。必要があると自分から確認する。';text+=' 声をかけなくても落ち着いて作業している。';}
+     if(id==='tanaka'){S.knows.tanaka='新しいことは確認しながら覚える。考える時間も必要。';text+=' 工程表を見て、自分で次を思い出そうとしている。';}
+     if(id==='yamada'){S.knows.yamada='食事を楽しみにしていて、普段はよく食べる。周囲にも気づく。';text+='「お昼、今日カレーなんですよ」と楽しそうに話している。';}
+     if(id==='suzuki'){S.knows.suzuki='予定が見えると安心しやすい。変更が急だと不安定になりやすい。';text+=' 作業予定表を何度か確認してから箱詰めに戻った。';}
+   }
+   if(d===2&&id==='sato'&&S.knows.sato){text+=' 昨日の「静かだけれど安定」とは違う。';S.score.observe+=2;S.flags.satoDiff=true;}
+   if(d===4&&id==='yamada'&&S.knows.yamada){text+=' DAY1では昼食を楽しみにしていた。今日は明らかに違う。';S.score.safe+=2;S.flags.mealDiff=true;}
+ }
+ if(act==='talk'){
+   S.score.respect++;
+   if(d===1&&id==='sato'){text='「おはようございます」と短く声をかけると、佐藤さんは小さく会釈し、すぐ作業へ戻った。嫌がっているというより、作業に集中したい様子。';S.knows.sato='作業中は長い会話より、短い声かけの方が自然。';}
+   else if(d===1&&id==='tanaka'){text='「どうですか？」と聞くと、「いま思い出してるところです」と笑った。すぐ答えを教えるより待ってもよさそう。';S.knows.tanaka='自分で思い出す時間があると安心して進められる。';}
+   else if(d===1&&id==='yamada'){text='「今日どうですか？」に「お昼がカレーだから楽しみです」と笑顔。食事は普段楽しみにしているようだ。';S.knows.yamada='食事を楽しみにしていて、普段はよく食べる。';}
+   else if(d===1&&id==='suzuki'){text='「今日の予定、見ました？」と聞くと「うん、いつも通りなら大丈夫」と予定表を指した。';S.knows.suzuki='予定が見えると安心しやすい。急な変更は苦手そう。';}
+   else if(d===2&&id==='sato'){text=S.flags.satoDiff?'「昨日と少し違うように見えます」と伝えると、「昨日あまり眠れなくて」と話してくれた。':'「大丈夫ですか？」と聞くと「まあ…」と短い返事。理由を決めつけず、もう少し様子を見る余地がありそう。';}
+   else if(d===3&&id==='suzuki'){text='短く「予定が変わって困りました？」と聞くと、「急に言われると分からなくなる」と返ってきた。怒りだけでなく“見通しが消えた不安”がありそう。';S.flags.suzukiReason=true;}
+   else if(d===4&&id==='yamada'){text='「今日は食べにくい？」と聞くと、「なんか食欲ない」と小声。無理に完食させるより、体調の変化を見る必要がありそう。';S.flags.yamadaSaid=true;}
+   else text=chars[id].name+'に短く声をかけると、表情を見て返事をしてくれた。';
+   S.rel[id]++;
+ }
+ if(act==='wait'){
+   S.score.respect++;
+   if(id==='tanaka'){text='すぐ助けず少し待つと、田中さんは工程表を見て「あ、次これだ」と自分で再開した。表情も少し得意そう。';S.rel.tanaka+=2;}
+   else if(id==='sato'){text='少し待って見ていると、佐藤さんは必要なところで自分から「ここ確認していいですか」と声をかけてきた。';}
+   else if(d===3&&id==='suzuki'){text='距離をとって待つと、呼吸は少し落ち着いた。ただ、予定変更の説明がないままだと不安は残っていそう。';S.score.safe++;}
+   else text='すぐ介入せず少し待つと、'+chars[id].name+'は自分のペースで作業を続けた。';
+ }
+ if(act==='consult'){
+   S.score.team+=2;
+   if(id==='suzuki'){text='先輩職員に相談すると「急な変更の時は、まず次に何をするかを短く伝えると落ち着きやすいよ」と教えてくれた。';S.knows.suzuki='急な変更が苦手。次の見通しを短く具体的に伝えると安心しやすい。';}
+   else if(id==='yamada'){text='先輩職員は「山田さんは普段食事を楽しみにしているから、今日はいつもと違うね。体調も一緒に見よう」と教えてくれた。';S.knows.yamada='普段は食事を楽しみにしている。食事量の変化は体調を見る手がかり。';}
+   else text='先輩職員に相談すると、'+chars[id].name+'の普段の様子と今日の違いを一緒に整理してくれた。';
+ }
+ document.querySelector('#reactionText').textContent=text;
+ S.history.push({day:S.day,id,act,text});
+ document.querySelector('#valueHint').textContent=valueMessage(d,id,act);
+ advanceTurn();
+}
+
+function valueMessage(d,id,act){
+ if(d===1) return 'まず「その人の普段」を知る。正解探しより、次の日に気づける材料を増やす。';
+ if(d===2) return '重要なのは「昨日との違い」。変化は行動だけでなく、声・速度・表情にも出る。';
+ if(d===3) return '感情が大きく動いた時ほど、安全確保と“なぜ起きたか”の両方を見る。';
+ if(d===4) return '食事や排泄の場面でも、速さより安全と尊厳。人前で恥をかかせないことも支援。';
+ return '家族や職員と、推測ではなく事実をつなぐことが安心につながる。';
+}
+
+function advanceTurn(){
+ document.querySelectorAll('.actions button').forEach(b=>b.disabled=true);
+ setTimeout(()=>{
+   document.querySelectorAll('.actions button').forEach(b=>b.disabled=false);
+   if(S.turn<3){S.turn++; render(); maybeEvent();}
+   else endDay();
+ },700);
+}
+
+function maybeEvent(){
+ if(S.day===2 && S.turn===2 && !S.flags.d2event){
+  S.flags.d2event=true;
+  eventModal('昨日との違い',
+   '佐藤さんが部品を何度も数え直しています。田中さんも手を止めています。',
+   'DAY1の「普段」を知っていると、同じ“手が止まる”でも意味が違って見えます。',
+   [
+    ['佐藤さんを先に見る',()=>{S.selected='sato';S.score.observe+=2;S.flags.satoDiff=true;afterChoice('昨日は静かでも安定していた佐藤さん。今日は“数え直し”が増えている。変化として捉えた。');}],
+    ['田中さんにすぐ答えを教える',()=>{S.score.respect=Math.max(0,S.score.respect-1);afterChoice('田中さんは「いま思い出しかけてた」と少し残念そう。DAY1の反応を思い出す余地があった。');}],
+    ['先輩に田中さんを見てもらい、自分は佐藤さんへ',()=>{S.score.team+=2;S.score.observe+=2;S.flags.satoDiff=true;afterChoice('一人で全部抱えず分担。田中さんも待たせず、佐藤さんの変化も確認できた。');}]
+   ]);
+ }
+ if(S.day===3 && S.turn===2 && !S.flags.d3event){
+  S.flags.d3event=true;
+  eventModal('突然、大きな声',
+   '予定変更を聞いた鈴木さんが「なんで急に変えるんだよ！」と箱を強く置きました。周囲もこちらを見ています。',
+   '「怒っている人を止める」だけでなく、安全・刺激・見通しを考えます。',
+   [
+    ['少し距離を取り、周囲の安全を確保する',()=>{S.score.safe+=3;S.score.respect+=2;afterChoice('刺激を増やさず、安全な距離を確保。鈴木さんの呼吸が少し落ち着いた。');}],
+    ['大きな声で「落ち着いて」と注意する',()=>{S.score.safe=Math.max(0,S.score.safe-1);afterChoice('声量がぶつかり、鈴木さんの表情がさらに硬くなった。');}],
+    ['先輩に周囲を任せ、次の予定を短く伝える',()=>{S.score.team+=2;S.score.respect+=3;S.flags.suzukiReason=true;afterChoice('周囲を守りながら「次は箱詰めではなく検品です」と短く伝えると、鈴木さんは予定表を見て少し落ち着いた。');}]
+   ]);
+ }
+ if(S.day===4 && S.turn===2 && !S.flags.d4event){
+  S.flags.d4event=true;
+  eventModal('食事のあと',
+   '田中さんが衣服を汚してしまいました。本人は周囲を気にして下を向いています。',
+   '「早く処理する」だけでなく、本人がどう感じているかも大切です。',
+   [
+    ['人目の少ない場所へ案内し、本人の希望を聞く',()=>{S.score.respect+=4;S.score.safe+=2;afterChoice('周囲から見えにくい場所へ移動。「着替えたい」と本人が自分で希望を伝えた。');}],
+    ['その場ですぐ衣服を確認する',()=>{S.score.respect=Math.max(0,S.score.respect-2);afterChoice('対応は早かったが、田中さんは周囲の視線を気にしてさらに俯いた。');}],
+    ['先輩に着替え準備を頼み、自分は本人のそばへ',()=>{S.score.team+=3;S.score.respect+=3;afterChoice('役割分担し、本人を一人にせず、人目にも配慮して対応できた。');}]
+   ]);
+ }
+ if(S.day===5 && S.turn===2 && !S.flags.d5event){
+  S.flags.d5event=true;
+  familyModal();
+ }
+}
+
+function eventModal(title,body,hint,choices){
+ const L=document.querySelector('#modalLayer'),M=document.querySelector('#modal');
+ M.innerHTML=`<h2>${title}</h2><p>${body}</p><div class="warm">${hint}</div><div class="choiceList" id="choices"></div>`;
+ const C=M.querySelector('#choices');
+ choices.forEach(([t,f])=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{f();L.style.display='none';};C.appendChild(b)});
+ L.style.display='grid';
+}
+
+function afterChoice(text){
+ document.querySelector('#reactionText').textContent=text;
+ document.querySelector('#valueHint').textContent=valueMessage(S.day,S.selected,'event');
+}
+
+function familyModal(){
+ eventModal('ご家族から電話',
+  '「最近、山田が家で少し疲れているみたいなんですが、施設ではどうですか？」',
+  'DAY4の食事の様子を覚えていますか。家族対応では“安心させる”だけでなく、事実・施設での対応・その後を伝えることが大切です。',
+  [
+   ['「特に問題ありませんでした」と答える',()=>{afterChoice('心配させないようにしたが、施設で見えた変化を共有できなかった。');}],
+   ['昨日の食事量・水分・本人の言葉・その後を事実で伝える',()=>{S.score.team+=4;S.score.respect+=2;afterChoice('「昨日は食事と水分が少なめで、本人も食欲がないと話していました。今日は普段通りです」と事実を共有。家族も「家でも見てみます。ありがとう」と安心した様子。');}],
+   ['考えられる原因を詳しく推測して説明する',()=>{S.score.team=Math.max(0,S.score.team-1);afterChoice('確認できていない推測まで伝えてしまった。事実と推測は分ける必要がある。');}]
+  ]);
+}
+
+function renderLearned(){
+ const items=[];
+ Object.entries(S.knows).forEach(([id,v])=>{if(v)items.push(chars[id].name+'：'+v)});
+ document.querySelector('#learned').innerHTML=items.length?items.slice(-3).join('<br>'):'まだありません。';
+}
+
+function endDay(){
+ const day=S.day;
+ let quote='', lesson='';
+ if(day===1){
+   quote='「明日になれば、“今日との違い”が見えてくる。」';
+   lesson='DAY1は正解を出す日ではなく、4人の“いつもの姿”を知る日です。';
+ }
+ if(day===2){
+   quote=S.flags.satoDiff?'佐藤さん「昨日より今日の方が、よく見てくれてるね。」':'「同じように見える“手が止まる”でも、人によって理由は違う。」';
+   lesson='前日の情報があるから、小さな変化に意味が生まれます。';
+ }
+ if(day===3){
+   quote='鈴木さん「さっきはごめん。急に変わると、ちょっと分からなくなるんだ。」';
+   lesson='行動そのものだけでなく、その背景にある不安や見通しのなさを見ることも支援です。';
+ }
+ if(day===4){
+   quote=S.rel.tanaka>=2?'田中さん「今日は、自分でできたところ増えました。」':'「助けることと、待つこと。どちらも支援になる。」';
+   lesson='生活場面では、安全だけでなく本人の尊厳を守ることも大切です。';
+ }
+ if(day===5){ finish(); return; }
+
+ const L=document.querySelector('#modalLayer'),M=document.querySelector('#modal');
+ M.innerHTML=`<h2>DAY ${day} 終了</h2><div class="quote">${quote}</div><div class="summaryItem">${lesson}</div><button class="primary" id="nextDay">次の日へ</button>`;
+ L.style.display='grid';
+ M.querySelector('#nextDay').onclick=()=>{L.style.display='none';S.day++;S.turn=1;S.selected=null;S.flags={};document.querySelector('#focusEmpty').style.display='block';document.querySelector('#focusContent').style.display='none';render();};
+}
+
+function finish(){
+ document.querySelector('#play').style.display='none';
+ const e=document.querySelector('#ending');e.style.display='block';
+ const total=Object.values(S.score).reduce((a,b)=>a+b,0);
+ const lines=[
+   ['佐藤さん','「来週もいるんですか？」'],
+   ['田中さん','「今度、箱詰めもやってみたいです。」'],
+   ['山田さん','「今日はちゃんと食べましたよ（笑）」'],
+   ['鈴木さん','「来週の予定、もう出てます？」']
+ ];
+ let personal = total>=24
+   ? '田中さん「今度、箱詰めもやってみたいです。見ててください。」'
+   : '佐藤さん「また来週もいるんですか？」';
+ e.innerHTML=`<div class="end">
+   <div style="font-size:13px;color:var(--muted);font-weight:800">5日目・勤務終了</div>
+   <h1>5日間、おつかれさまでした。</h1>
+   <p style="max-width:620px;margin:0 auto;line-height:1.8">5日前、あなたはこの4人のことをほとんど知りませんでした。<br>今はどうでしょう。</p>
+
+   <div class="panel endCard">
+     <div class="daySummary">
+       ${lines.map(x=>`<div class="summaryItem"><b>${x[0]}</b><br>${x[1]}</div>`).join('')}
+     </div>
+     <div class="quote">${personal}</div>
+   </div>
+
+   <div class="panel endCard">
+     <p style="line-height:1.9;margin-top:0"><b>「佐藤さん、今日は疲れていないかな」</b><br>
+     <b>「田中さん、箱詰めもできるかな」</b><br>
+     <b>「鈴木さん、予定変更は大丈夫かな」</b></p>
+     <p style="line-height:1.8">そんなことが、少し気になっていませんか。</p>
+     <div class="quote" style="text-align:center;color:#3f83ad">人を知ると、仕事になる。</div>
+     <div class="warm"><b>福祉の仕事は、誰かの「できた」を増やしていく仕事です。</b><br><br>
+       接客で培った「人を見る力」<br>
+       営業で培った「話を聞く力」<br>
+       製造で培った「小さな変化に気づく力」<br>
+       事務で培った「正確に伝える力」<br><br>
+       福祉経験がなくても、これまでの仕事で身につけた力が、ここでは誰かを支える力になります。
+     </div>
+   </div>
+
+   <div class="panel endCard">
+     <b>この施設が大切にしていること</b>
+     <p style="line-height:1.8">よく見る。すぐ決めつけない。本人の力を待つ。安全と尊厳を守る。困ったときは一人で抱えず、家族や職員と事実をつなぐ。</p>
+   </div>
+
+   <button class="primary" id="moreJob" style="display:block;width:100%;max-width:480px;margin:16px auto 8px;text-align:center">この仕事をもっと知る</button>
+   <button class="secondary" id="again" style="display:block;width:100%;max-width:480px;margin:8px auto;text-align:center">もう一度、5日間を体験する</button>
+   <div id="ctaMsg" class="tiny" style="max-width:480px;margin:8px auto 0"></div>
+ </div>`;
+ e.querySelector('#again').onclick=()=>location.reload();
+ e.querySelector('#moreJob').onclick=()=>{
+   e.querySelector('#ctaMsg').textContent='試作版のため、ここには実際の採用ページURLを設定できます。';
+ };
+}
+
+document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{
+ if(!S.selected){
+   document.querySelector('#reactionText').textContent='先に人物をタップしてください。';
+   return;
+ }
+ immediate(S.selected,b.dataset.act);
+});
+
+document.querySelector('#introStart').onclick=()=>{
+  document.querySelector('#intro').style.display='none';
+  document.querySelector('#play').style.display='block';
+  const L=document.querySelector('#modalLayer'),M=document.querySelector('#modal');
+  M.innerHTML=`<h2>DAY 1　月曜日</h2>
+    <p>先輩職員が声をかけてきました。</p>
+    <div class="warm">「最初から全部分からなくて大丈夫。今日はまず、みんなが普段どんなふうに働いているか見てみて。」</div>
+    <button class="primary" id="day1go" style="width:100%;margin-top:14px;text-align:center">作業スペースへ</button>`;
+  L.style.display='grid';
+  M.querySelector('#day1go').onclick=()=>{L.style.display='none';};
+};
+render();
+</script>
+</body>
+</html>
